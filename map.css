@@ -24,6 +24,7 @@ header {
   flex-wrap: wrap;
   z-index: 1000;
 }
+
 header h1 {
   font-size: 0.95rem;
   font-weight: 600;
@@ -47,6 +48,7 @@ header h1 {
   flex: 1;
   min-width: 260px;
 }
+
 .search-bar input {
   flex: 1;
   padding: 6px 12px;
@@ -57,9 +59,11 @@ header h1 {
   font-size: 0.85rem;
   outline: none;
 }
+
 .search-bar input:focus {
   border-color: #7c85ff;
 }
+
 .search-bar button {
   padding: 6px 14px;
   border-radius: 8px;
@@ -70,6 +74,7 @@ header h1 {
   cursor: pointer;
   white-space: nowrap;
 }
+
 .search-bar button:hover {
   background: #9099ff;
 }
@@ -93,9 +98,11 @@ header h1 {
   font-size: 0.82rem;
   cursor: pointer;
 }
+
 #btn-calc:hover {
   background: #3a4060;
 }
+
 #btn-calc:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -109,12 +116,14 @@ header h1 {
   border-radius: 2px;
   margin-top: 4px;
 }
+
 .progress-fill {
   height: 100%;
   background: #7c85ff;
   border-radius: 2px;
   transition: width 0.2s ease;
 }
+
 #progress-label {
   font-size: 0.7rem;
   color: #555;
@@ -130,30 +139,38 @@ header h1 {
   cursor: pointer;
   white-space: nowrap;
 }
+
 .filtre-checkbox input[type="checkbox"] {
   width: 15px;
   height: 15px;
   accent-color: #7c85ff;
   cursor: pointer;
 }
+
 .filtre-checkbox:hover {
   color: #e8e8e8;
 }
+
 .filtre-rep {
   color: #f97316;
 }
+
 .filtre-rep:hover {
   color: #fdba74;
 }
+
 .filtre-rep-plus {
   color: #ef4444;
 }
+
 .filtre-rep-plus:hover {
   color: #fca5a5;
 }
+
 .filtre-rep input[type="checkbox"] {
   accent-color: #f97316;
 }
+
 .filtre-rep-plus input[type="checkbox"] {
   accent-color: #ef4444;
 }
@@ -165,10 +182,12 @@ header h1 {
   padding: 1px 6px;
   border-radius: 6px;
 }
+
 .tag-rep-REP {
   background: #431407;
   color: #fdba74;
 }
+
 .tag-rep-REPplus {
   background: #450a0a;
   color: #fca5a5;
@@ -180,6 +199,7 @@ header h1 {
   gap: 10px;
   flex-wrap: wrap;
 }
+
 .legende-item {
   display: flex;
   align-items: center;
@@ -187,6 +207,7 @@ header h1 {
   font-size: 0.72rem;
   color: #888;
 }
+
 .legende-dot {
   width: 10px;
   height: 10px;
@@ -200,6 +221,7 @@ header h1 {
   display: flex;
   overflow: hidden;
 }
+
 #map {
   flex: 1;
 }
@@ -216,9 +238,11 @@ header h1 {
   justify-content: center;
   gap: 16px;
 }
+
 #loader.hidden {
   display: none;
 }
+
 .loader-spinner {
   width: 36px;
   height: 36px;
@@ -227,15 +251,18 @@ header h1 {
   border-top-color: #7c85ff;
   animation: spin 0.8s linear infinite;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
+
 .loader-text {
   font-size: 0.85rem;
   color: #555;
 }
+
 .loader-progress {
   font-size: 0.75rem;
   color: #7c85ff;
@@ -251,6 +278,7 @@ header h1 {
   border-left: 1px solid #1e2130;
   overflow: hidden;
 }
+
 #liste-header {
   padding: 10px 14px;
   border-bottom: 1px solid #1e2130;
@@ -259,6 +287,7 @@ header h1 {
   font-weight: 600;
   flex-shrink: 0;
 }
+
 #liste-etablissements {
   flex: 1;
   overflow-y: auto;
@@ -275,14 +304,17 @@ header h1 {
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .liste-item:hover {
   background: #1e2130;
 }
+
 .liste-item.actif {
   background: #1e2540;
   border-left: 3px solid #7c85ff;
   padding-left: 11px;
 }
+
 .liste-dot {
   width: 10px;
   height: 10px;
@@ -290,9 +322,11 @@ header h1 {
   flex-shrink: 0;
   border: 1.5px solid rgba(255, 255, 255, 0.2);
 }
+
 .liste-info {
   min-width: 0;
 }
+
 .liste-nom {
   font-size: 0.8rem;
   color: #e8e8e8;
@@ -301,14 +335,17 @@ header h1 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .liste-meta {
   font-size: 0.72rem;
   color: #555;
   margin-top: 2px;
 }
+
 .liste-dist {
   color: #7c85ff;
 }
+
 .liste-dist.sans-dist {
   color: #444;
 }
@@ -318,12 +355,14 @@ header h1 {
   font-size: 13px;
   min-width: 210px;
 }
+
 .popup-box h3 {
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 5px;
   color: #111;
 }
+
 .popup-box .tag {
   display: inline-block;
   background: #e8f0fe;
@@ -334,6 +373,7 @@ header h1 {
   border-radius: 10px;
   margin-bottom: 7px;
 }
+
 .popup-box .row {
   display: flex;
   gap: 6px;
@@ -341,12 +381,76 @@ header h1 {
   color: #444;
   font-size: 12px;
 }
+
 .popup-box .label {
   font-weight: 600;
   color: #222;
   min-width: 58px;
 }
+
 .ref-icon {
   font-size: 22px;
   line-height: 1;
+}
+
+/* ── Onglets ── */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #1e2130;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: #b0b8d0;
+}
+
+.tab.actif {
+  color: #7c85ff;
+  border-bottom-color: #7c85ff;
+  font-weight: 600;
+}
+
+/* ── Circonscriptions ── */
+.circo-item {
+  align-items: flex-start;
+}
+
+.circo-moy {
+  color: #7c85ff;
+  font-weight: 600;
+}
+
+.circo-range {
+  color: #8892a4;
+  font-size: 0.72rem;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+/* ── Tooltip circonscription ── */
+.circo-tooltip {
+  background: #0f1117;
+  border: 1px solid #2e3248;
+  color: #e8e8e8;
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.circo-tooltip::before {
+  display: none;
 }
