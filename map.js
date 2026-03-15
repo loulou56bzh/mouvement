@@ -121,9 +121,6 @@ function initialiserMarqueurs(etablissements) {
         '<div class="row"><span class="label">Mail</span><span>' +
         ecole.mail +
         "</span></div>" +
-        '<div class="row"><span class="label">Maternelle</span><span>' +
-        (ecole.ecole_maternelle ? "✓" : "—") +
-        "</span></div>" +
         (ecole.rep
           ? '<div class="row"><span class="label">Prioritaire</span><span class="tag-rep tag-rep-' +
             ecole.rep.replace("+", "plus") +
@@ -131,6 +128,9 @@ function initialiserMarqueurs(etablissements) {
             ecole.rep +
             "</span></div>"
           : "") +
+        '<div class="row"><span class="label">Maternelle</span><span>' +
+        (ecole.ecole_maternelle ? "✓" : "—") +
+        "</span></div>" +
         '<div class="row"><span class="label">Élémentaire</span><span>' +
         (ecole.ecole_elementaire ? "✓" : "—") +
         "</span></div>" +
