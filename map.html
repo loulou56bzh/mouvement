@@ -1,6 +1,5 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,8 +7,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="map.css" />
 </head>
-
 <body>
+
   <div id="loader">
     <div class="loader-spinner"></div>
     <div class="loader-text" id="loader-text">Chargement...</div>
@@ -17,7 +16,8 @@
   </div>
 
   <header>
-    <h1>🏫 Écoles publiques — Loire-Atlantique</h1>
+    <h1 id="titre-dept">🏫 Écoles publiques — Loire-Atlantique</h1>
+    <select id="dept-select" class="dept-select"></select>
     <span class="badge" id="counter">Chargement...</span>
 
     <form class="search-bar" id="form-adresse">
@@ -26,35 +26,22 @@
     </form>
     <span id="status-adresse"></span>
 
-    <div style="display: flex; flex-direction: column; gap: 2px">
+    <div style="display:flex;flex-direction:column;gap:2px">
       <button id="btn-calc">Calculer les distances</button>
-      <div id="progress-bar">
-        <div class="progress-fill"></div>
-      </div>
+      <div id="progress-bar"><div class="progress-fill"></div></div>
       <span id="progress-label"></span>
     </div>
 
-    <label class="filtre-checkbox"><input type="checkbox" id="filtre-maternelle" checked />
-      Maternelle</label>
-    <label class="filtre-checkbox"><input type="checkbox" id="filtre-elementaire" checked />
-      Élémentaire</label>
+    <label class="filtre-checkbox"><input type="checkbox" id="filtre-maternelle"  checked /> Maternelle</label>
+    <label class="filtre-checkbox"><input type="checkbox" id="filtre-elementaire" checked /> Élémentaire</label>
     <label class="filtre-checkbox filtre-rep"><input type="checkbox" id="filtre-rep" checked /> REP</label>
     <label class="filtre-checkbox filtre-rep-plus"><input type="checkbox" id="filtre-rep-plus" checked /> REP+</label>
 
     <div class="legende" id="legende-distances">
-      <div class="legende-item">
-        <span class="legende-dot" style="background: #22c55e"></span> ≤ 20 min
-      </div>
-      <div class="legende-item">
-        <span class="legende-dot" style="background: #f97316"></span> ≤ 30 min
-      </div>
-      <div class="legende-item">
-        <span class="legende-dot" style="background: #ef4444"></span> ≤ 40 min
-      </div>
-      <div class="legende-item">
-        <span class="legende-dot" style="background: #111827; border: 1px solid #555"></span>
-        > 40 min
-      </div>
+      <div class="legende-item"><span class="legende-dot" style="background:#22c55e"></span> ≤ 20 min</div>
+      <div class="legende-item"><span class="legende-dot" style="background:#f97316"></span> ≤ 30 min</div>
+      <div class="legende-item"><span class="legende-dot" style="background:#ef4444"></span> ≤ 40 min</div>
+      <div class="legende-item"><span class="legende-dot" style="background:#111827;border:1px solid #555"></span> > 40 min</div>
     </div>
   </header>
 
@@ -71,7 +58,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="departements.js"></script>
   <script src="map.js"></script>
 </body>
-
 </html>
