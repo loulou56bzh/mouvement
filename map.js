@@ -359,31 +359,39 @@ async function calculerToutesDistances() {
   var traites = 0;
   majProgression(0, total);
 
-  var BATCH = 100;
-  var lots  = [];
+  var BATCH       = 100;  // max coordonnées par requête OSRM
+  var CONCURRENCE = 6;    // max requêtes simultanées
+
+  // Découper en lots de 100
+  var lots = [];
   for (var i = 0; i < cibles.length; i += BATCH) lots.push(cibles.slice(i, i + BATCH));
 
-  await Promise.all(lots.map(async function(lot) {
-    try {
-      var coords = referenceLatLng.lng + "," + referenceLatLng.lat;
-      for (var j = 0; j < lot.length; j++) coords += ";" + lot[j].ecole.lng + "," + lot[j].ecole.lat;
-      var res  = await fetch("https://router.project-osrm.org/table/v1/driving/" + coords + "?sources=0&annotations=duration,distance");
-      var data = await res.json();
-      if (data.code === "Ok") {
-        var durees    = data.durations[0];
-        var distances = data.distances ? data.distances[0] : null;
-        for (var j = 0; j < lot.length; j++) {
-          var duree = durees[j + 1];
-          if (duree !== null && duree !== undefined) {
-            lot[j].dureeMin = Math.round(duree / 60);
-            lot[j].distKm   = distances ? parseFloat((distances[j + 1] / 1000).toFixed(1)) : null;
+  // Traiter les lots 6 par 6 en séquentiel
+  for (var start = 0; start < lots.length; start += CONCURRENCE) {
+    var groupe = lots.slice(start, start + CONCURRENCE);
+
+    await Promise.all(groupe.map(async function(lot) {
+      try {
+        var coords = referenceLatLng.lng + "," + referenceLatLng.lat;
+        for (var j = 0; j < lot.length; j++) coords += ";" + lot[j].ecole.lng + "," + lot[j].ecole.lat;
+        var res  = await fetch("https://router.project-osrm.org/table/v1/driving/" + coords + "?sources=0&annotations=duration,distance");
+        var data = await res.json();
+        if (data.code === "Ok") {
+          var durees    = data.durations[0];
+          var distances = data.distances ? data.distances[0] : null;
+          for (var j = 0; j < lot.length; j++) {
+            var duree = durees[j + 1];
+            if (duree !== null && duree !== undefined) {
+              lot[j].dureeMin = Math.round(duree / 60);
+              lot[j].distKm   = distances ? parseFloat((distances[j + 1] / 1000).toFixed(1)) : null;
+            }
           }
         }
-      }
-    } catch(e) {}
-    traites += lot.length;
-    majProgression(Math.min(traites, total), total);
-  }));
+      } catch(e) {}
+      traites += lot.length;
+      majProgression(Math.min(traites, total), total);
+    }));
+  }
 
   appliquerCouleursMarqueurs();
   rafraichirListe();
