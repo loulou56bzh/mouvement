@@ -12,10 +12,10 @@ var PAGE_SIZE = 100;
 
 // ── Palette de couleurs pour les circonscriptions ─────────────────────────────
 var PALETTE = [
-  "#ff4d4d","#3366ff","#cc00ff","#ff00aa","#ff6600",
-  "#0099ff","#9933ff","#ff3399","#ff6699","#00ccff",
-  "#ff0066","#ff4d4d","#3366ff","#cc00ff","#ff00aa",
-  "#ff6600","#0099ff","#9933ff","#ff3399","#ff6699",
+  "#ff4d4d", "#3366ff", "#cc00ff", "#ff00aa", "#ff6600",
+  "#0099ff", "#9933ff", "#ff3399", "#ff6699", "#00ccff",
+  "#ff0066", "#ff4d4d", "#3366ff", "#cc00ff", "#ff00aa",
+  "#ff6600", "#0099ff", "#9933ff", "#ff3399", "#ff6699",
 ];
 
 // ── Couleurs durée ────────────────────────────────────────────────────────────
@@ -28,10 +28,10 @@ function couleurDuree(min) {
 }
 
 // ── État global ───────────────────────────────────────────────────────────────
-var ecoleMarkers      = [];
-var referenceMarker   = null;
-var referenceLatLng   = null;
-var ongletActif       = "distances"; // "distances" | "circonscriptions"
+var ecoleMarkers = [];
+var referenceMarker = null;
+var referenceLatLng = null;
+var ongletActif = "distances"; // "distances" | "circonscriptions"
 var circonscriptionCouleurs = {};    // nom → couleur hex
 var circonscriptionPolygones = {};   // nom → L.Polygon
 
@@ -44,7 +44,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 // ── Chargement ────────────────────────────────────────────────────────────────
 async function chargerDonnees() {
-  var loader    = document.getElementById("loader");
+  var loader = document.getElementById("loader");
   var loaderPct = document.getElementById("loader-progress");
   loader.classList.remove("hidden");
   document.getElementById("loader-text").textContent = "Chargement des établissements...";
@@ -55,8 +55,8 @@ async function chargerDonnees() {
 
   do {
     var url = API_URL + "?where=" + encodeURIComponent(API_WHERE) +
-              "&limit=" + PAGE_SIZE + "&offset=" + offset;
-    var res  = await fetch(url);
+      "&limit=" + PAGE_SIZE + "&offset=" + offset;
+    var res = await fetch(url);
     var data = await res.json();
     if (totalCount === null) totalCount = data.total_count;
     allResults = allResults.concat(data.results);
@@ -69,7 +69,7 @@ async function chargerDonnees() {
   // Dédupliquer par identifiant
   var seen = {};
   var unique = [];
-  allResults.forEach(function(e) {
+  allResults.forEach(function (e) {
     var id = e.identifiant_de_l_etablissement;
     if (!seen[id]) { seen[id] = true; unique.push(e); }
   });
@@ -83,11 +83,11 @@ async function chargerDonnees() {
   document.getElementById("titre-dept").textContent = "🏫 Écoles publiques — " + nomDept;
   // Centrer la carte sur les établissements du département
   if (ecoleMarkers.length > 0) {
-    var lats = ecoleMarkers.map(function(em) { return em.ecole.lat; });
-    var lngs = ecoleMarkers.map(function(em) { return em.ecole.lng; });
+    var lats = ecoleMarkers.map(function (em) { return em.ecole.lat; });
+    var lngs = ecoleMarkers.map(function (em) { return em.ecole.lng; });
     map.fitBounds(
       [[Math.min.apply(null, lats), Math.min.apply(null, lngs)],
-       [Math.max.apply(null, lats), Math.max.apply(null, lngs)]],
+      [Math.max.apply(null, lats), Math.max.apply(null, lngs)]],
       { padding: [30, 30] }
     );
   }
@@ -97,37 +97,37 @@ async function chargerDonnees() {
 // ── Assigner une couleur par circonscription ──────────────────────────────────
 function assignerCouleursCirconscriptions(etablissements) {
   var noms = [];
-  etablissements.forEach(function(e) {
+  etablissements.forEach(function (e) {
     var n = e.nom_circonscription || "Inconnue";
     if (noms.indexOf(n) === -1) noms.push(n);
   });
   noms.sort();
-  noms.forEach(function(n, i) {
+  noms.forEach(function (n, i) {
     circonscriptionCouleurs[n] = PALETTE[i % PALETTE.length];
   });
 }
 
 // ── Création des marqueurs ────────────────────────────────────────────────────
 function initialiserMarqueurs(etablissements) {
-  var valides = etablissements.filter(function(e) {
+  var valides = etablissements.filter(function (e) {
     return e.latitude != null && e.longitude != null;
   });
 
   // Décaler légèrement les points qui partagent exactement les mêmes coordonnées
   var coordCount = {};
-  valides.forEach(function(e) {
+  valides.forEach(function (e) {
     var key = e.latitude + "," + e.longitude;
     coordCount[key] = (coordCount[key] || 0) + 1;
   });
   var coordIndex = {};
   var OFFSET = 0.00003; // ~3 mètres
-  valides.forEach(function(e) {
+  valides.forEach(function (e) {
     var key = e.latitude + "," + e.longitude;
     if (coordCount[key] > 1) {
       var idx = coordIndex[key] || 0;
       var total = coordCount[key];
       var angle = (2 * Math.PI * idx) / total;
-      e._lat = e.latitude  + OFFSET * Math.cos(angle);
+      e._lat = e.latitude + OFFSET * Math.cos(angle);
       e._lng = e.longitude + OFFSET * Math.sin(angle);
       coordIndex[key] = idx + 1;
     } else {
@@ -136,23 +136,23 @@ function initialiserMarqueurs(etablissements) {
     }
   });
 
-  ecoleMarkers = valides.map(function(e) {
+  ecoleMarkers = valides.map(function (e) {
     var ecole = {
-      lat:               e.latitude,
-      lng:               e.longitude,
-      mlat:              e._lat,
-      mlng:              e._lng,
-      identifiant:       e.identifiant_de_l_etablissement,
-      nom:               e.nom_etablissement,
-      type:              e.type_etablissement,
-      adresse:           [e.adresse_1, e.adresse_2, e.adresse_3].filter(Boolean).join(", "),
-      commune:           e.nom_commune,
-      tel:               e.telephone || "—",
-      mail:              e.mail || "—",
-      ecole_maternelle:  e.ecole_maternelle  === 1,
+      lat: e.latitude,
+      lng: e.longitude,
+      mlat: e._lat,
+      mlng: e._lng,
+      identifiant: e.identifiant_de_l_etablissement,
+      nom: e.nom_etablissement,
+      type: e.type_etablissement,
+      adresse: [e.adresse_1, e.adresse_2, e.adresse_3].filter(Boolean).join(", "),
+      commune: e.nom_commune,
+      tel: e.telephone || "—",
+      mail: e.mail || "—",
+      ecole_maternelle: e.ecole_maternelle === 1,
       ecole_elementaire: e.ecole_elementaire === 1,
-      rep:               e.appartenance_education_prioritaire || null,
-      circonscription:   e.nom_circonscription || "Inconnue",
+      rep: e.appartenance_education_prioritaire || null,
+      circonscription: e.nom_circonscription || "Inconnue",
     };
 
     var marker = L.circleMarker([e._lat, e._lng], {
@@ -162,7 +162,7 @@ function initialiserMarqueurs(etablissements) {
 
     marker.bindPopup(buildPopup(ecole));
 
-    marker.on("click", function() {
+    marker.on("click", function () {
       if (referenceLatLng) afficherOuCalculerDistance(ecole);
       mettreEnSurbrillanceListe(ecole.mlat, ecole.mlng);
     });
@@ -176,18 +176,18 @@ function buildPopup(ecole) {
     "<h3>" + ecole.nom + "</h3>" +
     '<span class="tag">' + ecole.type + "</span>" +
     '<div class="row" style="align-items:flex-start">' +
-      '<span class="label" style="flex-shrink:0">Circonscription</span>' +
-      '<span style="display:flex;align-items:flex-start;gap:5px">' +
-        '<span style="width:10px;height:10px;border-radius:50%;background:' + (circonscriptionCouleurs[ecole.circonscription] || "#888") + ';flex-shrink:0;margin-top:2px"></span>' +
-        '<span>' + ecole.circonscription + '</span>' +
-      '</span></div>' +
-    '<div class="row"><span class="label">Commune</span><span>'    + ecole.commune + "</span></div>" +
-    '<div class="row"><span class="label">Adresse</span><span>'    + ecole.adresse + "</span></div>" +
-    '<div class="row"><span class="label">Tél.</span><span>'       + ecole.tel     + "</span></div>" +
-    '<div class="row"><span class="label">Mail</span><span>'       + ecole.mail    + "</span></div>" +
-    (ecole.rep ? '<div class="row"><span class="label">Prioritaire</span><span class="tag-rep tag-rep-' + ecole.rep.replace("+","plus") + '">' + ecole.rep + "</span></div>" : "") +
-    '<div class="row"><span class="label">Maternelle</span><span>' + (ecole.ecole_maternelle  ? "✓" : "—") + "</span></div>" +
-    '<div class="row"><span class="label">Élémentaire</span><span>'+ (ecole.ecole_elementaire ? "✓" : "—") + "</span></div>" +
+    '<span class="label" style="flex-shrink:0">Circonscription</span>' +
+    '<span style="display:flex;align-items:flex-start;gap:5px">' +
+    '<span style="width:10px;height:10px;border-radius:50%;background:' + (circonscriptionCouleurs[ecole.circonscription] || "#888") + ';flex-shrink:0;margin-top:2px"></span>' +
+    '<span>' + ecole.circonscription + '</span>' +
+    '</span></div>' +
+    '<div class="row"><span class="label">Commune</span><span>' + ecole.commune + "</span></div>" +
+    '<div class="row"><span class="label">Adresse</span><span>' + ecole.adresse + "</span></div>" +
+    '<div class="row"><span class="label">Tél.</span><span>' + ecole.tel + "</span></div>" +
+    '<div class="row"><span class="label">Mail</span><span>' + ecole.mail + "</span></div>" +
+    (ecole.rep ? '<div class="row"><span class="label">Prioritaire</span><span class="tag-rep tag-rep-' + ecole.rep.replace("+", "plus") + '">' + ecole.rep + "</span></div>" : "") +
+    '<div class="row"><span class="label">Maternelle</span><span>' + (ecole.ecole_maternelle ? "✓" : "—") + "</span></div>" +
+    '<div class="row"><span class="label">Élémentaire</span><span>' + (ecole.ecole_elementaire ? "✓" : "—") + "</span></div>" +
     '<div class="row" id="dist-' + ecole.identifiant + '"><span class="label">Distance</span><span>—</span></div>' +
     "</div>";
 }
@@ -196,15 +196,15 @@ function buildPopup(ecole) {
 // ── Convex Hull (algorithme de Graham scan simplifié) ────────────────────────
 function convexHull(points) {
   if (points.length < 3) return points;
-  points = points.slice().sort(function(a, b) { return a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]; });
+  points = points.slice().sort(function (a, b) { return a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]; });
   var lower = [];
   for (var i = 0; i < points.length; i++) {
-    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], points[i]) <= 0) lower.pop();
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) lower.pop();
     lower.push(points[i]);
   }
   var upper = [];
   for (var i = points.length - 1; i >= 0; i--) {
-    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], points[i]) <= 0) upper.pop();
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) upper.pop();
     upper.push(points[i]);
   }
   upper.pop(); lower.pop();
@@ -218,7 +218,7 @@ function cross(O, A, B) {
 function dessinerPolygones() {
   // Regrouper les points visibles par circonscription
   var groupes = {};
-  ecoleMarkers.forEach(function(em) {
+  ecoleMarkers.forEach(function (em) {
     if (!em.visible) return;
     var n = em.ecole.circonscription;
     if (!groupes[n]) groupes[n] = [];
@@ -226,24 +226,24 @@ function dessinerPolygones() {
   });
 
   // Supprimer les anciens polygones
-  Object.keys(circonscriptionPolygones).forEach(function(n) {
+  Object.keys(circonscriptionPolygones).forEach(function (n) {
     circonscriptionPolygones[n].remove();
   });
   circonscriptionPolygones = {};
 
   // Dessiner les nouveaux
-  Object.keys(groupes).forEach(function(n) {
+  Object.keys(groupes).forEach(function (n) {
     var pts = groupes[n];
     if (pts.length < 2) return;
     var couleur = circonscriptionCouleurs[n] || "#888";
     var hull = pts.length >= 3 ? convexHull(pts) : pts;
     var poly = L.polygon(hull, {
-      color:       couleur,
-      weight:      2,
-      opacity:     0.8,
-      fillColor:   couleur,
+      color: couleur,
+      weight: 2,
+      opacity: 0.8,
+      fillColor: couleur,
       fillOpacity: 0.06,
-      dashArray:   "5,4",
+      dashArray: "5,4",
       interactive: false,
     }).addTo(map);
     poly.bindTooltip(n, { sticky: false, direction: "center", className: "circo-tooltip" });
@@ -252,7 +252,7 @@ function dessinerPolygones() {
 }
 
 function effacerPolygones() {
-  Object.keys(circonscriptionPolygones).forEach(function(n) {
+  Object.keys(circonscriptionPolygones).forEach(function (n) {
     circonscriptionPolygones[n].remove();
   });
   circonscriptionPolygones = {};
@@ -263,13 +263,13 @@ function basculerOnglet(onglet) {
   document.getElementById("tab-distances").classList.toggle("actif", onglet === "distances");
   document.getElementById("tab-circo").classList.toggle("actif", onglet === "circonscriptions");
   if (onglet === "circonscriptions") { dessinerPolygones(); }
-  else                               { effacerPolygones(); }
+  else { effacerPolygones(); }
   appliquerCouleursMarqueurs();
   rafraichirListe();
 }
 
 function appliquerCouleursMarqueurs() {
-  ecoleMarkers.forEach(function(em) {
+  ecoleMarkers.forEach(function (em) {
     if (!em.visible) return;
     if (ongletActif === "circonscriptions") {
       em.marker.setStyle({ fillColor: circonscriptionCouleurs[em.ecole.circonscription] || "#888" });
@@ -279,28 +279,28 @@ function appliquerCouleursMarqueurs() {
   });
 }
 
-document.getElementById("tab-distances").addEventListener("click", function() { basculerOnglet("distances"); });
-document.getElementById("tab-circo").addEventListener("click",     function() { basculerOnglet("circonscriptions"); });
+document.getElementById("tab-distances").addEventListener("click", function () { basculerOnglet("distances"); });
+document.getElementById("tab-circo").addEventListener("click", function () { basculerOnglet("circonscriptions"); });
 
 // ── Filtres ───────────────────────────────────────────────────────────────────
 function appliquerFiltre() {
-  var showMat     = document.getElementById("filtre-maternelle").checked;
-  var showElem    = document.getElementById("filtre-elementaire").checked;
-  var showRep     = document.getElementById("filtre-rep").checked;
+  var showMat = document.getElementById("filtre-maternelle").checked;
+  var showElem = document.getElementById("filtre-elementaire").checked;
+  var showRep = document.getElementById("filtre-rep").checked;
   var showRepPlus = document.getElementById("filtre-rep-plus").checked;
   var visibles = 0;
 
-  ecoleMarkers.forEach(function(em) {
+  ecoleMarkers.forEach(function (em) {
     var e = em.ecole;
-    var estSeulMat  = e.ecole_maternelle  && !e.ecole_elementaire;
+    var estSeulMat = e.ecole_maternelle && !e.ecole_elementaire;
     var estSeulElem = e.ecole_elementaire && !e.ecole_maternelle;
-    var estLesDeux  = e.ecole_maternelle  && e.ecole_elementaire;
+    var estLesDeux = e.ecole_maternelle && e.ecole_elementaire;
     var okType = (!estSeulMat || showMat) && (!estSeulElem || showElem) && (!estLesDeux || showMat || showElem);
-    var okRep  = (e.rep !== "REP" || showRep) && (e.rep !== "REP+" || showRepPlus);
+    var okRep = (e.rep !== "REP" || showRep) && (e.rep !== "REP+" || showRepPlus);
     var ok = okType && okRep;
     em.visible = ok;
     if (ok) { em.marker.addTo(map); visibles++; }
-    else    { em.marker.remove(); }
+    else { em.marker.remove(); }
   });
 
   document.getElementById("counter").textContent = visibles + " établissements";
@@ -310,13 +310,13 @@ function appliquerFiltre() {
 }
 document.getElementById("filtre-maternelle").addEventListener("change", appliquerFiltre);
 document.getElementById("filtre-elementaire").addEventListener("change", appliquerFiltre);
-document.getElementById("filtre-rep").addEventListener("change",        appliquerFiltre);
-document.getElementById("filtre-rep-plus").addEventListener("change",   appliquerFiltre);
+document.getElementById("filtre-rep").addEventListener("change", appliquerFiltre);
+document.getElementById("filtre-rep-plus").addEventListener("change", appliquerFiltre);
 
 // ── Géocodage ─────────────────────────────────────────────────────────────────
 async function geocodeAdresse(adresse) {
   var url = "https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(adresse) + "&limit=1";
-  var res  = await fetch(url, { headers: { "Accept-Language": "fr" } });
+  var res = await fetch(url, { headers: { "Accept-Language": "fr" } });
   var data = await res.json();
   if (!data.length) throw new Error("Adresse introuvable");
   return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name };
@@ -325,7 +325,7 @@ async function geocodeAdresse(adresse) {
 // ── Distance unitaire ─────────────────────────────────────────────────────────
 async function afficherOuCalculerDistance(ecole) {
   var el = document.getElementById("dist-" + ecole.identifiant);
-  var em = ecoleMarkers.find(function(e) { return e.ecole.lat === ecole.lat && e.ecole.lng === ecole.lng; });
+  var em = ecoleMarkers.find(function (e) { return e.ecole.lat === ecole.lat && e.ecole.lng === ecole.lng; });
 
   if (em && em.dureeMin !== null) {
     if (el) el.querySelector("span:last-child").textContent = em.dureeMin + " min — " + em.distKm + " km";
@@ -334,14 +334,14 @@ async function afficherOuCalculerDistance(ecole) {
 
   var url = "https://router.project-osrm.org/route/v1/driving/" +
     referenceLatLng.lng + "," + referenceLatLng.lat + ";" + ecole.lng + "," + ecole.lat + "?overview=false";
-  var res  = await fetch(url);
+  var res = await fetch(url);
   var data = await res.json();
   if (data.code !== "Ok") return;
-  var distKm   = (data.routes[0].distance / 1000).toFixed(1);
+  var distKm = (data.routes[0].distance / 1000).toFixed(1);
   var dureeMin = Math.round(data.routes[0].duration / 60);
   if (em) {
     em.dureeMin = dureeMin;
-    em.distKm   = parseFloat(distKm);
+    em.distKm = parseFloat(distKm);
     if (ongletActif === "distances") em.marker.setStyle({ fillColor: couleurDuree(dureeMin) });
   }
   if (el) el.querySelector("span:last-child").textContent = dureeMin + " min — " + distKm + " km";
@@ -352,54 +352,46 @@ async function calculerToutesDistances() {
   if (!referenceLatLng) return;
   var btn = document.getElementById("btn-calc");
   btn.disabled = true;
-  ecoleMarkers.forEach(function(em) { em.dureeMin = null; em.distKm = null; });
+  ecoleMarkers.forEach(function (em) { em.dureeMin = null; em.distKm = null; });
 
-  var cibles  = ecoleMarkers;
-  var total   = cibles.length;
+  var cibles = ecoleMarkers;
+  var total = cibles.length;
   var traites = 0;
   majProgression(0, total);
 
-  var BATCH       = 100;  // max coordonnées par requête OSRM
-  var CONCURRENCE = 6;    // max requêtes simultanées
-
-  // Découper en lots de 100
+  var BATCH = 100;
   var lots = [];
   for (var i = 0; i < cibles.length; i += BATCH) lots.push(cibles.slice(i, i + BATCH));
 
-  // Traiter les lots 6 par 6 en séquentiel
-  for (var start = 0; start < lots.length; start += CONCURRENCE) {
-    var groupe = lots.slice(start, start + CONCURRENCE);
-
-    await Promise.all(groupe.map(async function(lot) {
-      try {
-        var coords = referenceLatLng.lng + "," + referenceLatLng.lat;
-        for (var j = 0; j < lot.length; j++) coords += ";" + lot[j].ecole.lng + "," + lot[j].ecole.lat;
-        var res  = await fetch("https://router.project-osrm.org/table/v1/driving/" + coords + "?sources=0&annotations=duration,distance");
-        var data = await res.json();
-        if (data.code === "Ok") {
-          var durees    = data.durations[0];
-          var distances = data.distances ? data.distances[0] : null;
-          for (var j = 0; j < lot.length; j++) {
-            var duree = durees[j + 1];
-            if (duree !== null && duree !== undefined) {
-              lot[j].dureeMin = Math.round(duree / 60);
-              lot[j].distKm   = distances ? parseFloat((distances[j + 1] / 1000).toFixed(1)) : null;
-            }
+  for (var i = 0; i < lots.length; i++) {
+    var lot = lots[i];
+    try {
+      var coords = referenceLatLng.lng + "," + referenceLatLng.lat;
+      for (var j = 0; j < lot.length; j++) coords += ";" + lot[j].ecole.lng + "," + lot[j].ecole.lat;
+      var res = await fetch("https://router.project-osrm.org/table/v1/driving/" + coords + "?sources=0&annotations=duration,distance");
+      var data = await res.json();
+      if (data.code === "Ok") {
+        var durees = data.durations[0];
+        var distances = data.distances ? data.distances[0] : null;
+        for (var j = 0; j < lot.length; j++) {
+          var duree = durees[j + 1];
+          if (duree !== null && duree !== undefined) {
+            lot[j].dureeMin = Math.round(duree / 60);
+            lot[j].distKm = distances ? parseFloat((distances[j + 1] / 1000).toFixed(1)) : null;
           }
         }
-      } catch(e) {}
-      traites += lot.length;
-      majProgression(Math.min(traites, total), total);
-    }));
+      }
+    } catch (e) { }
+    traites += lot.length;
+    majProgression(Math.min(traites, total), total);
+    appliquerCouleursMarqueurs();
+    rafraichirListe();
   }
-
-  appliquerCouleursMarqueurs();
-  rafraichirListe();
 }
 
 function majProgression(fait, total) {
-  var pct   = total > 0 ? Math.round((fait / total) * 100) : 0;
-  var btn   = document.getElementById("btn-calc");
+  var pct = total > 0 ? Math.round((fait / total) * 100) : 0;
+  var btn = document.getElementById("btn-calc");
   var barre = document.getElementById("progress-bar");
   var label = document.getElementById("progress-label");
   if (fait === 0) {
@@ -430,19 +422,19 @@ function rafraichirListe() {
 
 // Liste onglet Distances
 function rafraichirListeDistances() {
-  var panel   = document.getElementById("liste-panel");
-  var liste   = document.getElementById("liste-etablissements");
-  var visibles = ecoleMarkers.filter(function(em) { return em.visible; });
+  var panel = document.getElementById("liste-panel");
+  var liste = document.getElementById("liste-etablissements");
+  var visibles = ecoleMarkers.filter(function (em) { return em.visible; });
 
-  var avecDuree = visibles.filter(function(em) { return em.dureeMin !== null; });
-  var sansDuree = visibles.filter(function(em) { return em.dureeMin === null; });
-  avecDuree.sort(function(a, b) { return a.dureeMin !== b.dureeMin ? a.dureeMin - b.dureeMin : (a.distKm || 0) - (b.distKm || 0); });
-  sansDuree.sort(function(a, b) { return a.ecole.nom.localeCompare(b.ecole.nom); });
+  var avecDuree = visibles.filter(function (em) { return em.dureeMin !== null; });
+  var sansDuree = visibles.filter(function (em) { return em.dureeMin === null; });
+  avecDuree.sort(function (a, b) { return a.dureeMin !== b.dureeMin ? a.dureeMin - b.dureeMin : (a.distKm || 0) - (b.distKm || 0); });
+  sansDuree.sort(function (a, b) { return a.ecole.nom.localeCompare(b.ecole.nom); });
 
   var tries = avecDuree.concat(sansDuree);
-  var html  = "";
+  var html = "";
   for (var i = 0; i < tries.length; i++) {
-    var em      = tries[i];
+    var em = tries[i];
     var couleur = couleurDuree(em.dureeMin);
     var distLabel = em.dureeMin !== null
       ? '<span class="liste-dist">' + em.dureeMin + " min · " + em.distKm + " km</span>"
@@ -461,37 +453,37 @@ function rafraichirListeDistances() {
 
 // Liste onglet Circonscriptions
 function rafraichirListeCirconscriptions() {
-  var panel   = document.getElementById("liste-panel");
-  var liste   = document.getElementById("liste-etablissements");
-  var visibles = ecoleMarkers.filter(function(em) { return em.visible; });
+  var panel = document.getElementById("liste-panel");
+  var liste = document.getElementById("liste-etablissements");
+  var visibles = ecoleMarkers.filter(function (em) { return em.visible; });
 
   // Regrouper par circonscription
   var groupes = {};
-  visibles.forEach(function(em) {
+  visibles.forEach(function (em) {
     var n = em.ecole.circonscription;
     if (!groupes[n]) groupes[n] = [];
     groupes[n].push(em);
   });
 
   // Calculer stats par circonscription
-  var stats = Object.keys(groupes).map(function(nom) {
+  var stats = Object.keys(groupes).map(function (nom) {
     var membres = groupes[nom];
-    var avecDuree = membres.filter(function(em) { return em.dureeMin !== null; });
+    var avecDuree = membres.filter(function (em) { return em.dureeMin !== null; });
     var min = null, max = null, moy = null;
     if (avecDuree.length > 0) {
-      var durees = avecDuree.map(function(em) { return em.dureeMin; });
+      var durees = avecDuree.map(function (em) { return em.dureeMin; });
       min = Math.min.apply(null, durees);
       max = Math.max.apply(null, durees);
-      moy = Math.round(durees.reduce(function(a, b) { return a + b; }, 0) / durees.length);
+      moy = Math.round(durees.reduce(function (a, b) { return a + b; }, 0) / durees.length);
     }
     return { nom: nom, couleur: circonscriptionCouleurs[nom] || "#888", count: membres.length, min: min, max: max, moy: moy };
   });
 
   // Trier : celles avec moyenne d'abord, puis par nom
-  var avecMoy  = stats.filter(function(s) { return s.moy !== null; });
-  var sansMoy  = stats.filter(function(s) { return s.moy === null; });
-  avecMoy.sort(function(a, b) { return a.moy - b.moy; });
-  sansMoy.sort(function(a, b) { return a.nom.localeCompare(b.nom); });
+  var avecMoy = stats.filter(function (s) { return s.moy !== null; });
+  var sansMoy = stats.filter(function (s) { return s.moy === null; });
+  avecMoy.sort(function (a, b) { return a.moy - b.moy; });
+  sansMoy.sort(function (a, b) { return a.nom.localeCompare(b.nom); });
   var tries = avecMoy.concat(sansMoy);
 
   var html = "";
@@ -499,7 +491,7 @@ function rafraichirListeCirconscriptions() {
     var s = tries[i];
     var statsHtml = s.moy !== null
       ? '<span class="circo-moy">' + s.moy + ' min moy.</span>' +
-        '<span class="circo-range">↓ ' + s.min + ' min  ↑ ' + s.max + ' min</span>'
+      '<span class="circo-range">↓ ' + s.min + ' min  ↑ ' + s.max + ' min</span>'
       : '<span class="circo-moy sans-dist">—</span>';
     html += '<div class="liste-item circo-item" data-circo="' + encodeURIComponent(s.nom) + '" title="' + s.nom + '">' +
       '<span class="liste-dot" style="background:' + s.couleur + '"></span>' +
@@ -511,16 +503,16 @@ function rafraichirListeCirconscriptions() {
   liste.innerHTML = html;
 
   // Clic sur une circonscription → zoom + surligner tous ses établissements
-  liste.querySelectorAll(".circo-item").forEach(function(item) {
-    item.addEventListener("click", function() {
+  liste.querySelectorAll(".circo-item").forEach(function (item) {
+    item.addEventListener("click", function () {
       var nom = decodeURIComponent(item.dataset.circo);
-      var membres = ecoleMarkers.filter(function(em) { return em.ecole.circonscription === nom && em.visible; });
+      var membres = ecoleMarkers.filter(function (em) { return em.ecole.circonscription === nom && em.visible; });
       if (!membres.length) return;
-      var lats = membres.map(function(em) { return em.ecole.lat; });
-      var lngs = membres.map(function(em) { return em.ecole.lng; });
-      map.fitBounds([[Math.min.apply(null,lats), Math.min.apply(null,lngs)], [Math.max.apply(null,lats), Math.max.apply(null,lngs)]], { padding: [40, 40] });
+      var lats = membres.map(function (em) { return em.ecole.lat; });
+      var lngs = membres.map(function (em) { return em.ecole.lng; });
+      map.fitBounds([[Math.min.apply(null, lats), Math.min.apply(null, lngs)], [Math.max.apply(null, lats), Math.max.apply(null, lngs)]], { padding: [40, 40] });
       // Surligner dans la liste
-      liste.querySelectorAll(".circo-item").forEach(function(el) { el.classList.remove("actif"); });
+      liste.querySelectorAll(".circo-item").forEach(function (el) { el.classList.remove("actif"); });
       item.classList.add("actif");
     });
   });
@@ -529,12 +521,12 @@ function rafraichirListeCirconscriptions() {
 }
 
 function bindClicsListe() {
-  document.querySelectorAll(".liste-item:not(.circo-item)").forEach(function(item) {
-    item.addEventListener("click", function() {
+  document.querySelectorAll(".liste-item:not(.circo-item)").forEach(function (item) {
+    item.addEventListener("click", function () {
       var lat = parseFloat(item.dataset.lat);
       var lng = parseFloat(item.dataset.lng);
       map.setView([lat, lng], 14);
-      var found = ecoleMarkers.find(function(em) { return em.ecole.mlat === lat && em.ecole.mlng === lng; });
+      var found = ecoleMarkers.find(function (em) { return em.ecole.mlat === lat && em.ecole.mlng === lng; });
       if (found) {
         found.marker.openPopup();
         if (referenceLatLng) afficherOuCalculerDistance(found.ecole);
@@ -545,7 +537,7 @@ function bindClicsListe() {
 }
 
 function mettreEnSurbrillanceListe(lat, lng) {
-  document.querySelectorAll(".liste-item:not(.circo-item)").forEach(function(el) {
+  document.querySelectorAll(".liste-item:not(.circo-item)").forEach(function (el) {
     el.classList.toggle("actif", parseFloat(el.dataset.lat) === lat && parseFloat(el.dataset.lng) === lng);
   });
   var actif = document.querySelector(".liste-item.actif");
@@ -553,9 +545,9 @@ function mettreEnSurbrillanceListe(lat, lng) {
 }
 
 // ── Formulaire adresse ────────────────────────────────────────────────────────
-document.getElementById("form-adresse").addEventListener("submit", async function(e) {
+document.getElementById("form-adresse").addEventListener("submit", async function (e) {
   e.preventDefault();
-  var input  = document.getElementById("input-adresse");
+  var input = document.getElementById("input-adresse");
   var status = document.getElementById("status-adresse");
   status.textContent = "Recherche...";
   try {
@@ -569,7 +561,7 @@ document.getElementById("form-adresse").addEventListener("submit", async functio
     status.textContent = "✓ " + result.label.split(",").slice(0, 2).join(",");
     document.getElementById("btn-calc").style.display = "inline-block";
     rafraichirListe();
-  } catch(err) {
+  } catch (err) {
     status.textContent = "❌ Adresse introuvable";
   }
 });
