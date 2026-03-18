@@ -12,10 +12,26 @@ var PAGE_SIZE = 100;
 
 // ── Palette de couleurs pour les circonscriptions ─────────────────────────────
 var PALETTE = [
-  "#ff4d4d", "#3366ff", "#cc00ff", "#ff00aa", "#ff6600",
-  "#0099ff", "#9933ff", "#ff3399", "#ff6699", "#00ccff",
-  "#ff0066", "#ff4d4d", "#3366ff", "#cc00ff", "#ff00aa",
-  "#ff6600", "#0099ff", "#9933ff", "#ff3399", "#ff6699",
+  "#e41a1c", // rouge
+  "#377eb8", // bleu
+  "#4daf4a", // vert
+  "#984ea3", // violet
+  "#ff7f00", // orange
+  "#ffff33", // jaune (ok car très saturé)
+  "#a65628", // marron
+  "#f781bf", // rose vif
+  "#1b9e77", // vert foncé
+  "#d95f02", // orange foncé
+  "#7570b3", // violet bleu
+  "#e7298a", // rose foncé
+  "#66a61e", // vert vif
+  "#e6ab02", // jaune foncé
+  "#a6761d", // brun
+  "#666666", // gris foncé
+  "#1f78b4", // bleu fort
+  "#6a3d9a",
+  "#33a02c",
+  "#e31a1c"
 ];
 
 // ── Couleurs durée ────────────────────────────────────────────────────────────
@@ -240,9 +256,9 @@ function dessinerPolygones() {
     var poly = L.polygon(hull, {
       color: couleur,
       weight: 2,
-      opacity: 0.8,
+      opacity: 0.9,
       fillColor: couleur,
-      fillOpacity: 0.06,
+      fillOpacity: 0.25,
       dashArray: "5,4",
       interactive: false,
     }).addTo(map);
