@@ -12,26 +12,10 @@ var PAGE_SIZE = 100;
 
 // ── Palette de couleurs pour les circonscriptions ─────────────────────────────
 var PALETTE = [
-  "#e41a1c", // rouge
-  "#377eb8", // bleu
-  "#4daf4a", // vert
-  "#984ea3", // violet
-  "#ff7f00", // orange
-  "#ffff33", // jaune (ok car très saturé)
-  "#a65628", // marron
-  "#f781bf", // rose vif
-  "#1b9e77", // vert foncé
-  "#d95f02", // orange foncé
-  "#7570b3", // violet bleu
-  "#e7298a", // rose foncé
-  "#66a61e", // vert vif
-  "#e6ab02", // jaune foncé
-  "#a6761d", // brun
-  "#666666", // gris foncé
-  "#1f78b4", // bleu fort
-  "#6a3d9a",
-  "#33a02c",
-  "#e31a1c"
+  "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
+  "#ffff33", "#a65628", "#f781bf", "#1b9e77", "#d95f02",
+  "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d",
+  "#666666", "#1f78b4", "#6a3d9a", "#33a02c", "#e31a1c"
 ];
 
 // ── Couleurs durée ────────────────────────────────────────────────────────────
@@ -48,11 +32,78 @@ var ecoleMarkers = [];
 var referenceMarker = null;
 var referenceLatLng = null;
 var ongletActif = "distances"; // "distances" | "circonscriptions"
-var circonscriptionCouleurs = {};    // nom → couleur hex
-var circonscriptionPolygones = {};   // nom → L.Polygon
+var circonscriptionCouleurs = {};
+var circonscriptionPolygones = {};
+
+// ── Écoles à 4 jours (UAI) ────────────────────────────────────────────────────
+// Chargé depuis ecoles_4_jours_44.json — seulement utilisé pour le dept 044
+var ECOLES_4_JOURS = new Set();
+
+async function chargerEcoles4Jours() {
+  if (DEPT_ACTIF !== "044") return;
+  try {
+    var res = await fetch("ecoles_4_jours_44.json");
+    if (!res.ok) return;
+    var data = await res.json();
+    data.forEach(function(e) {
+      // Accepte { uai: "..." } ou { identifiant_de_l_etablissement: "..." } ou une chaîne directe
+      var id = (typeof e === "string") ? e : (e.uai || e.identifiant_de_l_etablissement || "");
+      if (id) ECOLES_4_JOURS.add(id.trim().toUpperCase());
+    });
+    console.log("Écoles 4 jours chargées :", ECOLES_4_JOURS.size);
+    // Injecter le sélecteur rythme dans le header (uniquement pour le dept 044)
+    injecterSelectRythme();
+  } catch(err) {
+    console.warn("Impossible de charger ecoles_4_jours_44.json :", err);
+  }
+}
+
+// ── Sélecteur rythme (dept 044 uniquement) ────────────────────────────────────
+function injecterSelectRythme() {
+  if (document.getElementById("filtre-rythme")) return; // déjà injecté
+  var header = document.querySelector("header");
+  var legende = document.getElementById("legende-distances");
+
+  var wrapper = document.createElement("div");
+  wrapper.id = "filtre-rythme-wrapper";
+  wrapper.style.cssText = "display:flex;align-items:center;gap:6px;";
+
+  var label = document.createElement("span");
+  label.style.cssText = "font-size:0.78rem;color:#b0b8d0;white-space:nowrap;";
+  label.textContent = "Rythme :";
+
+  var sel = document.createElement("select");
+  sel.id = "filtre-rythme";
+  sel.className = "dept-select";
+  sel.style.cssText = "max-width:140px;";
+  [
+    { value: "tous",  label: "Tous" },
+    { value: "4j",    label: "\u{1F4C5} 4 jours" },
+    { value: "4-5j",  label: "\u{1F4C6} 4,5 jours" },
+  ].forEach(function(opt) {
+    var o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = opt.label;
+    sel.appendChild(o);
+  });
+  sel.addEventListener("change", appliquerFiltre);
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(sel);
+  // Insérer juste avant la légende (ou à la fin du header si absent)
+  if (legende) header.insertBefore(wrapper, legende);
+  else header.appendChild(wrapper);
+}
+
+// Retourne "4 jours", "4,5 jours", ou null (si pas dept 44)
+function getRythme(ecole) {
+  if (DEPT_ACTIF !== "044") return null;
+  var id = String(ecole.identifiant || "").trim().toUpperCase();
+  return ECOLES_4_JOURS.has(id) ? "4 jours" : "4,5 jours";
+}
 
 // ── Carte Leaflet ─────────────────────────────────────────────────────────────
-var map = L.map("map").setView([46.5, 2.5], 6); // centré sur la France, ajusté après chargement
+var map = L.map("map").setView([46.5, 2.5], 6);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 19,
@@ -64,6 +115,8 @@ async function chargerDonnees() {
   var loaderPct = document.getElementById("loader-progress");
   loader.classList.remove("hidden");
   document.getElementById("loader-text").textContent = "Chargement des établissements...";
+
+  await chargerEcoles4Jours();
 
   var allResults = [];
   var offset = 0;
@@ -82,7 +135,6 @@ async function chargerDonnees() {
   } while (offset < totalCount);
 
   assignerCouleursCirconscriptions(allResults);
-  // Dédupliquer par identifiant
   var seen = {};
   var unique = [];
   allResults.forEach(function (e) {
@@ -93,11 +145,9 @@ async function chargerDonnees() {
   initialiserMarqueurs(unique);
   loader.classList.add("hidden");
   document.getElementById("counter").textContent = allResults.length + " établissements";
-  // Mettre à jour le titre avec le nom du département sélectionné
   var sel = document.getElementById("dept-select");
   var nomDept = sel ? sel.options[sel.selectedIndex].text : DEPT_ACTIF;
   document.getElementById("titre-dept").textContent = "🏫 Écoles publiques — " + nomDept;
-  // Centrer la carte sur les établissements du département
   if (ecoleMarkers.length > 0) {
     var lats = ecoleMarkers.map(function (em) { return em.ecole.lat; });
     var lngs = ecoleMarkers.map(function (em) { return em.ecole.lng; });
@@ -129,14 +179,13 @@ function initialiserMarqueurs(etablissements) {
     return e.latitude != null && e.longitude != null;
   });
 
-  // Décaler légèrement les points qui partagent exactement les mêmes coordonnées
   var coordCount = {};
   valides.forEach(function (e) {
     var key = e.latitude + "," + e.longitude;
     coordCount[key] = (coordCount[key] || 0) + 1;
   });
   var coordIndex = {};
-  var OFFSET = 0.00003; // ~3 mètres
+  var OFFSET = 0.00003;
   valides.forEach(function (e) {
     var key = e.latitude + "," + e.longitude;
     if (coordCount[key] > 1) {
@@ -188,15 +237,30 @@ function initialiserMarqueurs(etablissements) {
 }
 
 function buildPopup(ecole) {
+  var rythme = getRythme(ecole);
+  var rythmeHtml = "";
+  if (rythme !== null) {
+    var is4j = rythme === "4 jours";
+    // 4 jours = vert, 4,5 jours = bleu
+    rythmeHtml =
+      '<div class="row"><span class="label">Rythme</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:4px;' +
+        'background:' + (is4j ? "#14532d" : "#1e3a5f") + ';' +
+        'color:' + (is4j ? "#4ade80" : "#60a5fa") + ';' +
+        'font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">' +
+        (is4j ? "📅" : "📆") + " " + rythme +
+      '</span></div>';
+  }
+
   return '<div class="popup-box">' +
     "<h3>" + ecole.nom + "</h3>" +
     '<span class="tag">' + ecole.type + "</span>" +
     '<div class="row" style="align-items:flex-start">' +
-    '<span class="label" style="flex-shrink:0">Circonscription</span>' +
-    '<span style="display:flex;align-items:flex-start;gap:5px">' +
-    '<span style="width:10px;height:10px;border-radius:50%;background:' + (circonscriptionCouleurs[ecole.circonscription] || "#888") + ';flex-shrink:0;margin-top:2px"></span>' +
-    '<span>' + ecole.circonscription + '</span>' +
-    '</span></div>' +
+      '<span class="label" style="flex-shrink:0">Circonscription</span>' +
+      '<span style="display:flex;align-items:flex-start;gap:5px">' +
+        '<span style="width:10px;height:10px;border-radius:50%;background:' + (circonscriptionCouleurs[ecole.circonscription] || "#888") + ';flex-shrink:0;margin-top:2px"></span>' +
+        '<span>' + ecole.circonscription + '</span>' +
+      '</span></div>' +
     '<div class="row"><span class="label">Commune</span><span>' + ecole.commune + "</span></div>" +
     '<div class="row"><span class="label">Adresse</span><span>' + ecole.adresse + "</span></div>" +
     '<div class="row"><span class="label">Tél.</span><span>' + ecole.tel + "</span></div>" +
@@ -204,6 +268,7 @@ function buildPopup(ecole) {
     (ecole.rep ? '<div class="row"><span class="label">Prioritaire</span><span class="tag-rep tag-rep-' + ecole.rep.replace("+", "plus") + '">' + ecole.rep + "</span></div>" : "") +
     '<div class="row"><span class="label">Maternelle</span><span>' + (ecole.ecole_maternelle ? "✓" : "—") + "</span></div>" +
     '<div class="row"><span class="label">Élémentaire</span><span>' + (ecole.ecole_elementaire ? "✓" : "—") + "</span></div>" +
+    rythmeHtml +
     '<div class="row" id="dist-' + ecole.identifiant + '"><span class="label">Distance</span><span>—</span></div>' +
     "</div>";
 }
@@ -232,7 +297,6 @@ function cross(O, A, B) {
 
 // ── Dessiner / effacer les polygones de circonscription ───────────────────────
 function dessinerPolygones() {
-  // Regrouper les points visibles par circonscription
   var groupes = {};
   ecoleMarkers.forEach(function (em) {
     if (!em.visible) return;
@@ -240,27 +304,19 @@ function dessinerPolygones() {
     if (!groupes[n]) groupes[n] = [];
     groupes[n].push([em.ecole.lat, em.ecole.lng]);
   });
-
-  // Supprimer les anciens polygones
   Object.keys(circonscriptionPolygones).forEach(function (n) {
     circonscriptionPolygones[n].remove();
   });
   circonscriptionPolygones = {};
-
-  // Dessiner les nouveaux
   Object.keys(groupes).forEach(function (n) {
     var pts = groupes[n];
     if (pts.length < 2) return;
     var couleur = circonscriptionCouleurs[n] || "#888";
     var hull = pts.length >= 3 ? convexHull(pts) : pts;
     var poly = L.polygon(hull, {
-      color: couleur,
-      weight: 2,
-      opacity: 0.9,
-      fillColor: couleur,
-      fillOpacity: 0.25,
-      dashArray: "5,4",
-      interactive: false,
+      color: couleur, weight: 2, opacity: 0.9,
+      fillColor: couleur, fillOpacity: 0.25,
+      dashArray: "5,4", interactive: false,
     }).addTo(map);
     poly.bindTooltip(n, { sticky: false, direction: "center", className: "circo-tooltip" });
     circonscriptionPolygones[n] = poly;
@@ -300,20 +356,32 @@ document.getElementById("tab-circo").addEventListener("click", function () { bas
 
 // ── Filtres ───────────────────────────────────────────────────────────────────
 function appliquerFiltre() {
-  var showMat = document.getElementById("filtre-maternelle").checked;
-  var showElem = document.getElementById("filtre-elementaire").checked;
-  var showRep = document.getElementById("filtre-rep").checked;
+  var showMat     = document.getElementById("filtre-maternelle").checked;
+  var showElem    = document.getElementById("filtre-elementaire").checked;
+  var showRep     = document.getElementById("filtre-rep").checked;
   var showRepPlus = document.getElementById("filtre-rep-plus").checked;
-  var visibles = 0;
+  // "tous" | "4j" | "4-5j" — sélecteur rythme (null si élément absent, ex. autre dept)
+  var selRythme   = document.getElementById("filtre-rythme");
+  var rythmeVal   = selRythme ? selRythme.value : "tous";
+  var visibles    = 0;
 
   ecoleMarkers.forEach(function (em) {
     var e = em.ecole;
-    var estSeulMat = e.ecole_maternelle && !e.ecole_elementaire;
+    var estSeulMat  = e.ecole_maternelle && !e.ecole_elementaire;
     var estSeulElem = e.ecole_elementaire && !e.ecole_maternelle;
-    var estLesDeux = e.ecole_maternelle && e.ecole_elementaire;
+    var estLesDeux  = e.ecole_maternelle && e.ecole_elementaire;
     var okType = (!estSeulMat || showMat) && (!estSeulElem || showElem) && (!estLesDeux || showMat || showElem);
-    var okRep = (e.rep !== "REP" || showRep) && (e.rep !== "REP+" || showRepPlus);
-    var ok = okType && okRep;
+    var okRep  = (e.rep !== "REP" || showRep) && (e.rep !== "REP+" || showRepPlus);
+
+    // Filtre rythme (uniquement si le sélecteur est présent, i.e. dept 044)
+    var okRythme = true;
+    if (rythmeVal !== "tous") {
+      var rythme = getRythme(e);
+      if (rythmeVal === "4j")   okRythme = rythme === "4 jours";
+      if (rythmeVal === "4-5j") okRythme = rythme === "4,5 jours";
+    }
+
+    var ok = okType && okRep && okRythme;
     em.visible = ok;
     if (ok) { em.marker.addTo(map); visibles++; }
     else { em.marker.remove(); }
@@ -328,6 +396,11 @@ document.getElementById("filtre-maternelle").addEventListener("change", applique
 document.getElementById("filtre-elementaire").addEventListener("change", appliquerFiltre);
 document.getElementById("filtre-rep").addEventListener("change", appliquerFiltre);
 document.getElementById("filtre-rep-plus").addEventListener("change", appliquerFiltre);
+// Filtre rythme — seulement présent pour le dept 044
+(function() {
+  var sel = document.getElementById("filtre-rythme");
+  if (sel) sel.addEventListener("change", appliquerFiltre);
+})();
 
 // ── Géocodage ─────────────────────────────────────────────────────────────────
 async function geocodeAdresse(adresse) {
@@ -363,6 +436,7 @@ async function afficherOuCalculerDistance(ecole) {
   if (el) el.querySelector("span:last-child").textContent = dureeMin + " min — " + distKm + " km";
 }
 
+// ── Calcul toutes distances ───────────────────────────────────────────────────
 // ── Calcul toutes distances ───────────────────────────────────────────────────
 async function calculerToutesDistances() {
   if (!referenceLatLng) return;
@@ -436,7 +510,6 @@ function rafraichirListe() {
   }
 }
 
-// Liste onglet Distances
 function rafraichirListeDistances() {
   var panel = document.getElementById("liste-panel");
   var liste = document.getElementById("liste-etablissements");
@@ -455,11 +528,23 @@ function rafraichirListeDistances() {
     var distLabel = em.dureeMin !== null
       ? '<span class="liste-dist">' + em.dureeMin + " min · " + em.distKm + " km</span>"
       : '<span class="liste-dist sans-dist">—</span>';
+
+    // Badge rythme dans la liste (44 seulement)
+    var rythme = getRythme(em.ecole);
+    var rythmeTag = "";
+    if (rythme !== null) {
+      var is4j = rythme === "4 jours";
+      // 4 jours = vert, 4,5 jours = bleu
+      rythmeTag = ' <span style="display:inline-block;flex-shrink:0;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;' +
+        'background:' + (is4j ? "#14532d" : "#1e3a5f") + ';' +
+        'color:' + (is4j ? "#4ade80" : "#60a5fa") + '">' + rythme + '</span>';
+    }
+
     html += '<div class="liste-item" data-lat="' + em.ecole.mlat + '" data-lng="' + em.ecole.mlng + '" title="' + em.ecole.nom + ' — ' + em.ecole.commune + '">' +
       '<span class="liste-dot" style="background:' + couleur + '"></span>' +
       '<div class="liste-info">' +
       '<div class="liste-nom">' + em.ecole.nom + "</div>" +
-      '<div class="liste-meta">' + em.ecole.commune + " · " + distLabel + "</div>" +
+      '<div class="liste-meta" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">' + em.ecole.commune + " · " + distLabel + rythmeTag + "</div>" +
       "</div></div>";
   }
   liste.innerHTML = html;
@@ -467,13 +552,11 @@ function rafraichirListeDistances() {
   panel.style.display = "flex";
 }
 
-// Liste onglet Circonscriptions
 function rafraichirListeCirconscriptions() {
   var panel = document.getElementById("liste-panel");
   var liste = document.getElementById("liste-etablissements");
   var visibles = ecoleMarkers.filter(function (em) { return em.visible; });
 
-  // Regrouper par circonscription
   var groupes = {};
   visibles.forEach(function (em) {
     var n = em.ecole.circonscription;
@@ -481,7 +564,6 @@ function rafraichirListeCirconscriptions() {
     groupes[n].push(em);
   });
 
-  // Calculer stats par circonscription
   var stats = Object.keys(groupes).map(function (nom) {
     var membres = groupes[nom];
     var avecDuree = membres.filter(function (em) { return em.dureeMin !== null; });
@@ -495,7 +577,6 @@ function rafraichirListeCirconscriptions() {
     return { nom: nom, couleur: circonscriptionCouleurs[nom] || "#888", count: membres.length, min: min, max: max, moy: moy };
   });
 
-  // Trier : celles avec moyenne d'abord, puis par nom
   var avecMoy = stats.filter(function (s) { return s.moy !== null; });
   var sansMoy = stats.filter(function (s) { return s.moy === null; });
   avecMoy.sort(function (a, b) { return a.moy - b.moy; });
@@ -507,7 +588,7 @@ function rafraichirListeCirconscriptions() {
     var s = tries[i];
     var statsHtml = s.moy !== null
       ? '<span class="circo-moy">' + s.moy + ' min moy.</span>' +
-      '<span class="circo-range">↓ ' + s.min + ' min  ↑ ' + s.max + ' min</span>'
+        '<span class="circo-range">↓ ' + s.min + ' min  ↑ ' + s.max + ' min</span>'
       : '<span class="circo-moy sans-dist">—</span>';
     html += '<div class="liste-item circo-item" data-circo="' + encodeURIComponent(s.nom) + '" title="' + s.nom + '">' +
       '<span class="liste-dot" style="background:' + s.couleur + '"></span>' +
@@ -518,7 +599,6 @@ function rafraichirListeCirconscriptions() {
   }
   liste.innerHTML = html;
 
-  // Clic sur une circonscription → zoom + surligner tous ses établissements
   liste.querySelectorAll(".circo-item").forEach(function (item) {
     item.addEventListener("click", function () {
       var nom = decodeURIComponent(item.dataset.circo);
@@ -527,7 +607,6 @@ function rafraichirListeCirconscriptions() {
       var lats = membres.map(function (em) { return em.ecole.lat; });
       var lngs = membres.map(function (em) { return em.ecole.lng; });
       map.fitBounds([[Math.min.apply(null, lats), Math.min.apply(null, lngs)], [Math.max.apply(null, lats), Math.max.apply(null, lngs)]], { padding: [40, 40] });
-      // Surligner dans la liste
       liste.querySelectorAll(".circo-item").forEach(function (el) { el.classList.remove("actif"); });
       item.classList.add("actif");
     });
@@ -536,6 +615,7 @@ function rafraichirListeCirconscriptions() {
   panel.style.display = "flex";
 }
 
+// ── Clics liste & surbrillance ────────────────────────────────────────────────
 function bindClicsListe() {
   document.querySelectorAll(".liste-item:not(.circo-item)").forEach(function (item) {
     item.addEventListener("click", function () {
